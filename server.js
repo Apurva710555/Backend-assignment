@@ -1,10 +1,76 @@
-const express = require('express');
+const express = require("express");
+const mongoose = require("mongoose");
 const app = express();
+const bodyParser = require("body-parser");
+require('dotenv').config();
 
-//routes
-app.get('/', (req, res)=>{
-      res.send("hello world");
-})
-app.listen(3000, ()=>{
-  console.log("Node Api Running")
-})
+const movieSchema = new mongoose.Schema({
+  name: String,
+  img: String,
+  summary: String,
+});
+
+const Movie = mongoose.model("Movie", movieSchema);
+
+app.use(bodyParser.json());
+
+//  routes
+
+app.post("/movies", async (req, res) => {
+  try {
+    const newMovie = await Movie.create(req.body);
+    res.json(newMovie);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/movies", async (req, res) => {
+  try {
+    const movies = await Movie.find();
+    console.log("Movies:", movies);
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put("/movies/:id", async (req, res) => {
+  try {
+    const updatedMovie = await Movie.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedMovie);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/movies/:id", async (req, res) => {
+  try {
+    await Movie.findByIdAndDelete(req.params.id);
+    res.json({ message: "Movie deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+mongoose.set("strictQuery", false);
+mongoose
+  .connect(
+    process.env.MONGODB_URI,
+    {
+      dbName: "karan",
+    }
+  )
+  .then(() => {
+    console.log("connected to mongodb");
+    app.listen(3000, () => {
+      console.log("Node Api Running");
+    });
+  })
+  .catch((error) => {
+    console.log(error);
+  });
